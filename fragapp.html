@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0a0a0f">
+<title>FragApp</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600&family=DM+Mono:wght@300;400&display=swap');
+
+:root {
+  --bg:#0a0a0f; --surface:#13131a; --surface2:#1c1c26; --border:#2a2a3a;
+  --accent:#c9a84c; --accent2:#e8c97a; --text:#e8e4d8; --text-dim:#7a7890;
+  --text-mid:#a8a4b8; --green:#4caf82; --red:#e06c6c;
+  --radius:14px; --radius-sm:8px;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden}
+
+/* HEADER */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:12px 16px;
+  display:flex;align-items:center;gap:12px;position:sticky;top:0;z-index:50}
+.header-logo{font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:400;
+  color:var(--accent);letter-spacing:2px}
+.header-meta{font-size:10px;color:var(--text-dim);flex:1}
+.btn-icon{width:36px;height:36px;border-radius:50%;background:var(--surface2);
+  border:1px solid var(--border);color:var(--text-mid);font-size:18px;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.btn-icon:active{background:var(--border)}
+
+/* SEARCH */
+.search-bar{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;gap:8px;align-items:center}
+.search-input{flex:1;background:var(--surface2);border:1px solid var(--border);
+  border-radius:20px;padding:8px 14px;color:var(--text);
+  font-family:'DM Mono',monospace;font-size:13px;outline:none}
+.search-input::placeholder{color:var(--text-dim)}
+.search-input:focus{border-color:var(--accent)}
+
+/* CHIPS */
+.filters-scroll{overflow-x:auto;white-space:nowrap;padding:8px 16px;
+  background:var(--surface);border-bottom:1px solid var(--border);scrollbar-width:none}
+.filters-scroll::-webkit-scrollbar{display:none}
+.chip{display:inline-block;padding:4px 12px;background:var(--surface2);
+  border:1px solid var(--border);border-radius:20px;font-size:11px;color:var(--text-mid);
+  cursor:pointer;margin-right:6px;letter-spacing:.5px;
+  transition:background .15s,border-color .15s,color .15s;user-select:none}
+.chip.active{background:var(--accent);border-color:var(--accent);color:#000;font-weight:500}
+.chip:active{opacity:.7}
+
+/* SORT BAR */
+.sort-bar{display:flex;align-items:center;gap:8px;padding:6px 16px;
+  background:var(--bg);border-bottom:1px solid var(--border);font-size:11px;color:var(--text-dim)}
+.sort-bar span{flex:1}
+.sort-btn{background:none;border:none;color:var(--text-mid);font-size:11px;
+  font-family:'DM Mono',monospace;cursor:pointer;padding:2px 6px;border-radius:4px;
+  display:flex;align-items:center;gap:3px}
+.sort-btn.active{color:var(--accent)}
+.sort-btn:active{background:var(--surface)}
+
+/* LIST */
+.list{flex:1;overflow-y:auto;padding:8px 0}
+.perf-card{margin:0 12px 8px;background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:14px 16px;cursor:pointer;
+  transition:border-color .15s,transform .1s;display:flex;gap:14px;align-items:flex-start;
+  -webkit-user-select:none;user-select:none}
+.perf-card:active{transform:scale(.98);border-color:var(--accent)}
+.perf-img-placeholder{width:48px;height:48px;border-radius:8px;background:var(--surface2);
+  border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;
+  justify-content:center;font-size:20px;color:var(--border)}
+.perf-info{flex:1;min-width:0}
+.perf-brand{font-size:10px;color:var(--text-dim);letter-spacing:1.5px;
+  text-transform:uppercase;margin-bottom:2px}
+.perf-name{font-family:'Cormorant Garamond',serif;font-size:19px;font-weight:400;
+  color:var(--text);line-height:1.1}
+.perf-tags{margin-top:6px;display:flex;gap:5px;flex-wrap:wrap}
+.tag{font-size:10px;padding:2px 7px;border-radius:10px;border:1px solid var(--border);
+  color:var(--text-dim);letter-spacing:.5px}
+.tag.conc{border-color:var(--accent);color:var(--accent)}
+.perf-prices{text-align:right;flex-shrink:0}
+.price-best{font-size:16px;font-weight:400;color:var(--green)}
+.price-label{font-size:9px;color:var(--text-dim);letter-spacing:1px;margin-bottom:2px}
+.price-count{font-size:10px;color:var(--text-dim);margin-top:3px}
+.empty{text-align:center;padding:60px 24px;color:var(--text-dim)}
+.empty-icon{font-size:40px;margin-bottom:12px}
+.empty p{font-size:13px;line-height:1.7}
+
+/* SHEET */
+.sheet-overlay{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.6);
+  opacity:0;pointer-events:none;transition:opacity .25s}
+.sheet-overlay.open{opacity:1;pointer-events:all}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:90;background:var(--surface);
+  border-radius:20px 20px 0 0;border-top:1px solid var(--border);max-height:92dvh;
+  transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column}
+.sheet.open{transform:translateY(0)}
+.sheet-handle{width:36px;height:4px;border-radius:2px;background:var(--border);
+  margin:10px auto 0;flex-shrink:0}
+.sheet-scroll{overflow-y:auto;flex:1;padding-bottom:32px}
+
+/* SHEET TABS */
+.sheet-tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface)}
+.sheet-tab{flex:1;padding:10px 0;text-align:center;font-size:11px;letter-spacing:1px;
+  color:var(--text-dim);cursor:pointer;border-bottom:2px solid transparent;
+  transition:color .15s,border-color .15s;user-select:none}
+.sheet-tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.sheet-tab-panel{display:none}.sheet-tab-panel.active{display:block}
+
+/* IMAGEN */
+.sheet-img{width:90px;height:110px;border-radius:10px;object-fit:contain;
+  background:var(--surface2);flex-shrink:0}
+.sheet-img-placeholder{width:90px;height:110px;border-radius:10px;background:var(--surface2);
+  border:1px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:32px;flex-shrink:0}
+
+/* RATING */
+.sheet-stars{display:flex;align-items:center;gap:6px;margin-top:6px}
+.stars-row{display:flex;gap:2px}
+.star{font-size:13px;line-height:1}
+.rating-num{font-size:12px;color:var(--text-mid)}
+
+/* GÉNERO */
+.gender-pill{display:inline-block;padding:2px 10px;border-radius:20px;font-size:10px;
+  letter-spacing:.5px;margin-top:6px}
+.gender-m{background:#1a2a3a;color:#6ab0e0;border:1px solid #2a4a6a}
+.gender-f{background:#2a1a2a;color:#e06ab0;border:1px solid #5a2a5a}
+.gender-u{background:#1a2a1a;color:#6ae090;border:1px solid #2a5a2a}
+
+/* ACORDES */
+.accord-list{display:flex;flex-direction:column;gap:6px;padding:4px 0}
+.accord-row{display:flex;align-items:center;gap:8px}
+.accord-name{font-size:11px;color:var(--text-mid);width:130px;flex-shrink:0;text-transform:capitalize}
+.accord-bar-bg{flex:1;height:6px;border-radius:3px;background:var(--surface2);overflow:hidden}
+.accord-bar-fill{height:100%;border-radius:3px}
+
+/* NOTAS */
+.notes-pyramid{display:flex;flex-direction:column;gap:10px;padding:4px 0}
+.notes-level{background:var(--surface2);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:10px 12px}
+.notes-level-title{font-size:9px;letter-spacing:2px;color:var(--text-dim);
+  text-transform:uppercase;margin-bottom:6px}
+.notes-chips{display:flex;flex-wrap:wrap;gap:5px}
+.note-chip{padding:3px 9px;border-radius:20px;font-size:10px;
+  border:1px solid var(--border);color:var(--text-mid)}
+.note-chip.salida{border-color:#4a6a4a;color:#8ec98e}
+.note-chip.corazon{border-color:#6a4a5a;color:#c98eb0}
+.note-chip.base{border-color:#5a4a2a;color:#c9a84c}
+
+.sheet-hero{padding:20px 20px 16px;border-bottom:1px solid var(--border);
+  display:flex;gap:16px;align-items:flex-start}
+.sheet-img-placeholder{width:90px;height:110px;border-radius:10px;background:var(--surface2);
+  border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;
+  justify-content:center;font-size:32px;color:var(--border)}
+.sheet-brand{font-size:11px;color:var(--text-dim);letter-spacing:2px;
+  text-transform:uppercase;margin-bottom:4px}
+.sheet-name{font-family:'Cormorant Garamond',serif;font-size:26px;font-weight:400;
+  color:var(--text);line-height:1.15}
+.sheet-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.sheet-filter-row{padding:8px 20px;display:flex;gap:6px;overflow-x:auto;
+  scrollbar-width:none;border-bottom:1px solid var(--border)}
+.sheet-filter-row::-webkit-scrollbar{display:none}
+.sheet-section{padding:16px 20px 0}
+.sheet-section-title{font-size:9px;letter-spacing:2px;color:var(--text-dim);
+  text-transform:uppercase;margin-bottom:10px}
+.stats-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 20px 16px}
+.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:10px 8px;text-align:center}
+.stat-val{font-size:16px;color:var(--accent2)}
+.stat-lbl{font-size:9px;color:var(--text-dim);letter-spacing:.5px;margin-top:2px;text-transform:uppercase}
+.price-row{display:flex;align-items:center;gap:10px;padding:10px 12px;margin-bottom:6px;
+  background:var(--surface2);border-radius:var(--radius-sm);border:1px solid var(--border);
+  cursor:pointer;text-decoration:none;transition:border-color .15s}
+.price-row:active{border-color:var(--accent)}
+.price-row.best-price{border-color:var(--green)}
+.pr-rank{font-size:11px;color:var(--text-dim);width:18px;flex-shrink:0;text-align:center}
+.pr-rank.gold{color:var(--accent)}
+.pr-info{flex:1;min-width:0}
+.pr-store{font-size:13px;color:var(--text)}
+.pr-country{font-size:10px;color:var(--text-dim)}
+.pr-prices{text-align:right;flex-shrink:0}
+.pr-usd{font-size:15px;color:var(--text)}
+.pr-usd.cheapest{color:var(--green);font-weight:500}
+.pr-local{font-size:10px;color:var(--text-dim)}
+.pr-link-icon{font-size:14px;color:var(--text-dim);flex-shrink:0}
+
+/* FILTERS MODAL */
+.modal{position:fixed;inset:0;z-index:95;background:var(--surface);
+  transform:translateX(100%);transition:transform .3s cubic-bezier(.4,0,.2,1);
+  display:flex;flex-direction:column}
+.modal.open{transform:translateX(0)}
+.modal-header{display:flex;align-items:center;gap:12px;padding:14px 16px;
+  border-bottom:1px solid var(--border)}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--accent);flex:1}
+.modal-body{overflow-y:auto;flex:1;padding:20px 16px}
+.modal-section{margin-bottom:24px}
+.modal-section-title{font-size:10px;letter-spacing:2px;color:var(--text-dim);
+  text-transform:uppercase;margin-bottom:10px}
+.modal-chips{display:flex;flex-wrap:wrap;gap:6px}
+.btn-primary{display:block;width:100%;padding:14px;background:var(--accent);color:#000;
+  border:none;border-radius:var(--radius);font-family:'DM Mono',monospace;font-size:13px;
+  font-weight:500;letter-spacing:1px;cursor:pointer;text-align:center;margin-top:16px}
+.btn-primary:active{opacity:.8}
+
+/* DB INFO */
+.db-info-bar{font-size:10px;color:var(--text-dim);text-align:center;
+  padding:6px;background:var(--surface);border-bottom:1px solid var(--border)}
+.db-info-bar a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+
+<div id="app" style="display:flex;flex-direction:column;min-height:100dvh">
+
+  <div class="header">
+    <div class="header-logo">FRAG</div>
+    <div class="header-meta" id="header-meta"></div>
+    <div class="btn-icon" id="btn-filters">⚙</div>
+  </div>
+
+  <div class="db-info-bar" id="db-info"></div>
+
+  <div class="search-bar">
+    <input class="search-input" id="search-input" type="search"
+      placeholder="Buscar perfume o marca…" autocomplete="off">
+  </div>
+
+  <div class="filters-scroll" id="country-chips"></div>
+
+  <div class="sort-bar">
+    <span id="result-count">—</span>
+    <button class="sort-btn active" id="sort-name" onclick="setSort('name')">Nombre ↕</button>
+    <button class="sort-btn" id="sort-price" onclick="setSort('price')">Precio ↕</button>
+  </div>
+
+  <div class="list" id="perf-list"></div>
+</div>
+
+<div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-scroll" id="sheet-scroll"></div>
+</div>
+
+<div class="modal" id="filters-modal">
+  <div class="modal-header">
+    <div class="btn-icon" onclick="closeFilters()">←</div>
+    <div class="modal-title">Filtros</div>
+    <div class="btn-icon" onclick="clearFilters()"
+      style="font-size:13px;width:auto;padding:0 10px;border-radius:8px;">Limpiar</div>
+  </div>
+  <div class="modal-body">
+    <div class="modal-section">
+      <div class="modal-section-title">Concentración</div>
+      <div class="modal-chips" id="conc-chips"></div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Tienda</div>
+      <div class="modal-chips" id="store-chips"></div>
+    </div>
+    <button class="btn-primary" onclick="applyFilters()">Aplicar filtros</button>
+  </div>
+</div>
+
+<script>
+// ── CONFIG FIREBASE ────────────────────────────────────────────────────────────
+const FB = "https://frags-f9630-default-rtdb.firebaseio.com/d8f3a91c7e42";
+// ──────────────────────────────────────────────────────────────────────────────
+
+const COUNTRY_FLAGS = {Argentina:'🇦🇷',Chile:'🇨🇱',España:'🇪🇸',Francia:'🇫🇷',Paraguay:'🇵🇾'};
+
+let DB = { perfumes: [], prices: {}, generated_at: '' };
+let allPerfumes = [];
+let pricesByPerfume = {}; // {perfume_id: [{...}, ...]}
+let filtered = [];
+let sortMode = 'name';
+let filterCountry = '';
+let filterConc = '';
+let filterStore = '';
+let pendingConc = '';
+let pendingStore = '';
+let currentSheetPerfume = null;
+let currentSheetCountry = '';
+
+// ── CARGA DESDE FIREBASE ────────────────────────────────────────────────────────
+document.getElementById('db-info').textContent = 'Cargando datos…';
+
+fetch(FB + '/fragapp_data.json')
+  .then(r => r.json())
+  .then(data => {
+    if (!data) {
+      document.getElementById('db-info').innerHTML =
+        '⚠️ Sin datos — publicá desde la app primero';
+      return;
+    }
+    DB = data;
+    initApp();
+  })
+  .catch(() => {
+    document.getElementById('db-info').innerHTML = '⚠️ Sin conexión';
+  });
+
+// ── INIT ───────────────────────────────────────────────────────────────────────
+function initApp() {
+  allPerfumes = DB.perfumes || [];
+  pricesByPerfume = DB.prices || {};
+
+  document.getElementById('header-meta').textContent = `${allPerfumes.length} perfumes`;
+  document.getElementById('db-info').innerHTML =
+    `Base actualizada: <strong style="color:var(--text-mid)">${DB.generated_at}</strong>`;
+
+  // Country chips
+  const countries = [...new Set(
+    Object.values(pricesByPerfume).flat().map(p => p.country)
+  )].sort();
+  const ccDiv = document.getElementById('country-chips');
+  let html = `<div class="chip active" data-country="" onclick="setCountry('',this)">Todos</div>`;
+  countries.forEach(c => {
+    const flag = COUNTRY_FLAGS[c] || '';
+    html += `<div class="chip" data-country="${c}" onclick="setCountry('${c}',this)">${flag} ${c}</div>`;
+  });
+  ccDiv.innerHTML = html;
+
+  // Concentración chips
+  const concs = [...new Set(allPerfumes.map(p => p.concentration).filter(Boolean))].sort();
+  document.getElementById('conc-chips').innerHTML = concs.map(c =>
+    `<div class="chip" data-val="${c}" onclick="toggleChip(this,'conc')">${c}</div>`
+  ).join('');
+
+  // Tiendas chips
+  const stores = [...new Set(
+    Object.values(pricesByPerfume).flat().map(p => p.store_name)
+  )].sort();
+  document.getElementById('store-chips').innerHTML = stores.map(s =>
+    `<div class="chip" data-val="${s}" onclick="toggleChip(this,'store')">${esc(s)}</div>`
+  ).join('');
+
+  document.getElementById('btn-filters').addEventListener('click', openFilters);
+  document.getElementById('search-input').addEventListener('input', applySearch);
+
+  // Swipe down sheet
+  let touchStartY = 0;
+  const sheetEl = document.getElementById('sheet');
+  sheetEl.addEventListener('touchstart', e => { touchStartY = e.touches[0].clientY; }, {passive:true});
+  sheetEl.addEventListener('touchmove', e => {
+    if (e.touches[0].clientY - touchStartY > 60 &&
+        document.getElementById('sheet-scroll').scrollTop === 0) closeSheet();
+  }, {passive:true});
+
+  loadPerfumes();
+}
+
+// ── DATA ───────────────────────────────────────────────────────────────────────
+function getPerfumeMinUsd(id) {
+  const rows = (pricesByPerfume[id] || []).filter(p => {
+    if (filterCountry && p.country !== filterCountry) return false;
+    if (filterStore && p.store_name !== filterStore) return false;
+    return p.price_usd > 0;
+  });
+  if (!rows.length) return null;
+  return Math.min(...rows.map(r => r.price_usd));
+}
+function getPerfumePriceCount(id) {
+  return (pricesByPerfume[id] || []).filter(p => {
+    if (filterCountry && p.country !== filterCountry) return false;
+    if (filterStore && p.store_name !== filterStore) return false;
+    return p.price_usd > 0;
+  }).length;
+}
+
+function loadPerfumes() {
+  let list = allPerfumes;
+  if (filterConc) list = list.filter(p => p.concentration === filterConc);
+
+  // Si hay filtro de país o tienda, solo mostrar perfumes que tienen precio en ese contexto
+  if (filterCountry || filterStore) {
+    list = list.filter(p => getPerfumePriceCount(p.id) > 0);
+  }
+
+  filtered = list;
+  applySearch();
+}
+
+function applySearch() {
+  const q = document.getElementById('search-input').value.trim().toLowerCase();
+  let list = filtered;
+  if (q) {
+    list = list.filter(p =>
+      (p.brand||'').toLowerCase().includes(q) ||
+      (p.name||'').toLowerCase().includes(q)
+    );
+  }
+
+  // Agregar min_usd dinámico
+  list = list.map(p => ({
+    ...p,
+    _minUsd: getPerfumeMinUsd(p.id),
+    _count: getPerfumePriceCount(p.id)
+  }));
+
+  if (sortMode === 'price') {
+    list.sort((a,b) => (a._minUsd||1e9) - (b._minUsd||1e9));
+  } else {
+    list.sort((a,b) => {
+      const an = ((a.brand||'')+(a.name||'')).toLowerCase();
+      const bn = ((b.brand||'')+(b.name||'')).toLowerCase();
+      return an < bn ? -1 : an > bn ? 1 : 0;
+    });
+  }
+
+  document.getElementById('result-count').textContent = `${list.length} perfumes`;
+  renderList(list);
+}
+
+// ── RENDER LIST ────────────────────────────────────────────────────────────────
+function renderList(list) {
+  const container = document.getElementById('perf-list');
+  if (!list.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div>
+      <p>Sin resultados.<br>Probá otra búsqueda o filtro.</p></div>`;
+    return;
+  }
+  container.innerHTML = list.map(p => {
+    const concTag = p.concentration ? `<span class="tag conc">${p.concentration}</span>` : '';
+    const sizeTag = p.size_ml ? `<span class="tag">${p.size_ml}ml</span>` : '';
+    const priceHtml = p._minUsd
+      ? `<div class="price-label">DESDE</div>
+         <div class="price-best">U$S ${p._minUsd.toFixed(0)}</div>
+         <div class="price-count">${p._count} tiend${p._count===1?'a':'as'}</div>`
+      : `<div class="price-count" style="color:var(--text-dim)">sin precio</div>`;
+    return `<div class="perf-card" data-id="${p.id}">
+      <div class="perf-img-placeholder">🌸</div>
+      <div class="perf-info">
+        <div class="perf-brand">${esc(p.brand)}</div>
+        <div class="perf-name">${esc(p.name)}</div>
+        <div class="perf-tags">${concTag}${sizeTag}</div>
+      </div>
+      <div class="perf-prices">${priceHtml}</div>
+    </div>`;
+  }).join('');
+
+  container.querySelectorAll('.perf-card').forEach(el => {
+    el.addEventListener('click', () => openSheet(parseInt(el.dataset.id)));
+  });
+}
+
+// ── SHEET ──────────────────────────────────────────────────────────────────────
+function openSheet(id) {
+  currentSheetPerfume = allPerfumes.find(p => p.id === id);
+  currentSheetCountry = '';
+  currentSheetTab = 'info';
+  renderSheet();
+  document.getElementById('sheet-overlay').classList.add('open');
+  document.getElementById('sheet').classList.add('open');
+  document.getElementById('sheet-scroll').scrollTop = 0;
+}
+function closeSheet() {
+  document.getElementById('sheet-overlay').classList.remove('open');
+  document.getElementById('sheet').classList.remove('open');
+}
+
+// pestaña activa: 'info' o 'prices'
+let currentSheetTab = 'info';
+
+function renderSheet() {
+  const perfume = currentSheetPerfume;
+  if (!perfume) return;
+
+  // ── datos de precios ─────────────────────────────────────────────────────────
+  let rows = (pricesByPerfume[perfume.id] || []).filter(p => p.price_usd > 0);
+  if (currentSheetCountry) rows = rows.filter(p => p.country === currentSheetCountry);
+  const byStore = {};
+  rows.forEach(p => {
+    if (!byStore[p.store_name] || p.price_usd < byStore[p.store_name].price_usd)
+      byStore[p.store_name] = p;
+  });
+  const unique = Object.values(byStore).sort((a,b) => a.price_usd - b.price_usd);
+  const allRows = (pricesByPerfume[perfume.id] || []).filter(p => p.price_usd > 0);
+  const countrySet = [...new Set(allRows.map(p => p.country))].sort();
+
+  const minUsd = unique.length ? unique[0].price_usd : 0;
+  const maxUsd = unique.length ? unique[unique.length-1].price_usd : 0;
+  const spread = minUsd && maxUsd && unique.length > 1
+    ? (((maxUsd/minUsd)-1)*100).toFixed(0)+'%' : '—';
+
+  // ── hero ─────────────────────────────────────────────────────────────────────
+  const concTag = perfume.concentration ? `<span class="tag conc">${perfume.concentration}</span>` : '';
+  const sizeTag = perfume.size_ml ? `<span class="tag">${perfume.size_ml}ml</span>` : '';
+
+  const imgHtml = perfume.image_path
+    ? `<img class="sheet-img" src="data/images/${esc(perfume.image_path)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+      + `<div class="sheet-img-placeholder" style="display:none">🌸</div>`
+    : `<div class="sheet-img-placeholder">🌸</div>`;
+
+  // rating con estrellas
+  const rat = parseFloat(perfume.rating) || 0;
+  let starsHtml = '';
+  if (rat) {
+    const full = Math.floor(rat); const half = (rat - full) >= 0.4 ? 1 : 0; const empty = 5 - full - half;
+    starsHtml = `<div class="sheet-stars">
+      <div class="stars-row">
+        ${'<span class="star" style="color:var(--accent)">★</span>'.repeat(full)}
+        ${half ? '<span class="star" style="color:var(--accent)">½</span>' : ''}
+        ${'<span class="star" style="color:var(--border)">★</span>'.repeat(empty)}
+      </div>
+      <span class="rating-num">${rat.toFixed(2)}</span>
+    </div>`;
+  }
+
+  // género
+  let genderHtml = '';
+  if (perfume.gender) {
+    const g = perfume.gender.toLowerCase();
+    const cls = g.includes('hombre') ? 'gender-m' : g.includes('mujer') ? 'gender-f' : 'gender-u';
+    const label = g.includes('hombre') ? '♂ Hombres' : g.includes('mujer') ? '♀ Mujeres' : '⚥ Unisex';
+    genderHtml = `<div class="gender-pill ${cls}">${label}</div>`;
+  }
+
+  // ── pestaña INFO: acordes + notas ────────────────────────────────────────────
+  let notes = {};
+  try { notes = JSON.parse(perfume.notes_json || '{}'); } catch(e) {}
+
+  // acordes
+  let acordesHtml = '';
+  const ACCORD_COLORS = [
+    '#c9a84c','#8ec98e','#c98eb0','#6ab0e0','#e09a6a',
+    '#a084c8','#6ac8c8','#c8c86a','#c86a6a','#84a0c8'
+  ];
+  if ((notes.acordes||[]).length) {
+    const max = notes.acordes.length;
+    acordesHtml = `<div class="sheet-section">
+      <div class="sheet-section-title">Acordes principales</div>
+      <div class="accord-list">
+        ${notes.acordes.map((a, i) => {
+          const pct = Math.round(100 - (i / max) * 70);
+          const color = ACCORD_COLORS[i % ACCORD_COLORS.length];
+          return `<div class="accord-row">
+            <div class="accord-name">${esc(a)}</div>
+            <div class="accord-bar-bg">
+              <div class="accord-bar-fill" style="width:${pct}%;background:${color}"></div>
+            </div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>`;
+  }
+
+  // notas pirámide
+  const makeNoteChips = (arr, cls) =>
+    (arr||[]).map(n => `<span class="note-chip ${cls}">${esc(n)}</span>`).join('');
+
+  let notasHtml = '';
+  if ((notes.salida||[]).length || (notes.corazon||[]).length || (notes.base||[]).length) {
+    notasHtml = `<div class="sheet-section">
+      <div class="sheet-section-title">Pirámide de notas</div>
+      <div class="notes-pyramid">
+        ${(notes.salida||[]).length ? `<div class="notes-level">
+          <div class="notes-level-title">🍃 Salida</div>
+          <div class="notes-chips">${makeNoteChips(notes.salida,'salida')}</div>
+        </div>` : ''}
+        ${(notes.corazon||[]).length ? `<div class="notes-level">
+          <div class="notes-level-title">🌸 Corazón</div>
+          <div class="notes-chips">${makeNoteChips(notes.corazon,'corazon')}</div>
+        </div>` : ''}
+        ${(notes.base||[]).length ? `<div class="notes-level">
+          <div class="notes-level-title">🪵 Base</div>
+          <div class="notes-chips">${makeNoteChips(notes.base,'base')}</div>
+        </div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  const hasInfo = acordesHtml || notasHtml;
+  const noInfoHtml = !hasInfo
+    ? `<div style="padding:28px 20px;text-align:center;color:var(--text-dim);font-size:12px;">
+        Sin información olfativa cargada.</div>` : '';
+
+  // ── pestaña PRECIOS ──────────────────────────────────────────────────────────
+  let filterChips = `<div class="chip ${!currentSheetCountry?'active':''}"
+    onclick="setSheetCountry('')">Todos</div>`;
+  countrySet.forEach(c => {
+    const flag = COUNTRY_FLAGS[c] || '';
+    filterChips += `<div class="chip ${currentSheetCountry===c?'active':''}"
+      onclick="setSheetCountry('${c}')">${flag} ${c}</div>`;
+  });
+
+  const rankIcons = ['🥇','🥈','🥉'];
+  const priceRowsHtml = !unique.length
+    ? `<div style="padding:20px;text-align:center;color:var(--text-dim);font-size:13px;">Sin precios cargados</div>`
+    : unique.map((p, i) => {
+        const flag = COUNTRY_FLAGS[p.country] || '';
+        const isLink = (p.product_url||'').startsWith('http');
+        const rank = i < 3 ? rankIcons[i] : `${i+1}`;
+        return `<a class="price-row ${i===0?'best-price':''}"
+            ${isLink ? `href="${p.product_url}" target="_blank"` : ''}
+            style="${!isLink?'cursor:default':''}" onclick="${!isLink?'return false':''}">
+          <div class="pr-rank ${i===0?'gold':''}">${rank}</div>
+          <div class="pr-info">
+            <div class="pr-store">${esc(p.store_name)}</div>
+            <div class="pr-country">${flag} ${p.country}</div>
+          </div>
+          <div class="pr-prices">
+            <div class="pr-usd ${i===0?'cheapest':''}">U$S ${p.price_usd.toFixed(2)}</div>
+            ${p.currency !== 'USD' ? `<div class="pr-local">${fmtLocal(p.price_original, p.currency)}</div>` : ''}
+          </div>
+          ${isLink ? `<div class="pr-link-icon">→</div>` : ''}
+        </a>`;
+      }).join('');
+
+  // ── HTML final ───────────────────────────────────────────────────────────────
+  document.getElementById('sheet-scroll').innerHTML = `
+    <div class="sheet-hero">
+      ${imgHtml}
+      <div style="flex:1;min-width:0">
+        <div class="sheet-brand">${esc(perfume.brand)}</div>
+        <div class="sheet-name">${esc(perfume.name)}</div>
+        <div class="sheet-meta">${concTag}${sizeTag}</div>
+        ${starsHtml}
+        ${genderHtml}
+      </div>
+    </div>
+
+    <div class="sheet-tabs">
+      <div class="sheet-tab ${currentSheetTab==='info'?'active':''}"
+        onclick="switchSheetTab('info')">PERFUME</div>
+      <div class="sheet-tab ${currentSheetTab==='prices'?'active':''}"
+        onclick="switchSheetTab('prices')">PRECIOS ${allRows.length ? '('+unique.length+')' : ''}</div>
+    </div>
+
+    <div class="sheet-tab-panel ${currentSheetTab==='info'?'active':''}">
+      ${acordesHtml}
+      ${notasHtml}
+      ${noInfoHtml}
+    </div>
+
+    <div class="sheet-tab-panel ${currentSheetTab==='prices'?'active':''}">
+      <div class="sheet-filter-row">${filterChips}</div>
+      <div class="sheet-section">
+        <div style="height:8px"></div>
+        <div class="stats-grid">
+          <div class="stat-box">
+            <div class="stat-val">${minUsd ? 'U$S '+minUsd.toFixed(0) : '—'}</div>
+            <div class="stat-lbl">Mínimo</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val">${maxUsd && unique.length>1 ? 'U$S '+maxUsd.toFixed(0) : '—'}</div>
+            <div class="stat-lbl">Máximo</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-val">${spread}</div>
+            <div class="stat-lbl">Spread</div>
+          </div>
+        </div>
+      </div>
+      <div class="sheet-section">
+        <div class="sheet-section-title">Precios por tienda</div>
+        ${priceRowsHtml}
+      </div>
+    </div>`;
+}
+
+function switchSheetTab(tab) {
+  currentSheetTab = tab;
+  renderSheet();
+}
+
+function setSheetCountry(c) {
+  currentSheetCountry = c;
+  renderSheet();
+}
+
+// ── FILTERS ────────────────────────────────────────────────────────────────────
+function setCountry(country, el) {
+  filterCountry = country;
+  document.querySelectorAll('#country-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  loadPerfumes();
+}
+function setSort(mode) {
+  sortMode = mode;
+  document.getElementById('sort-name').classList.toggle('active', mode==='name');
+  document.getElementById('sort-price').classList.toggle('active', mode==='price');
+  applySearch();
+}
+function openFilters() {
+  pendingConc = filterConc; pendingStore = filterStore;
+  syncPendingChips();
+  document.getElementById('filters-modal').classList.add('open');
+}
+function closeFilters() { document.getElementById('filters-modal').classList.remove('open'); }
+function toggleChip(el, type) {
+  const val = el.dataset.val;
+  if (type === 'conc') pendingConc = pendingConc===val ? '' : val;
+  else pendingStore = pendingStore===val ? '' : val;
+  syncPendingChips();
+}
+function syncPendingChips() {
+  document.querySelectorAll('#conc-chips .chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.val===pendingConc));
+  document.querySelectorAll('#store-chips .chip').forEach(c =>
+    c.classList.toggle('active', c.dataset.val===pendingStore));
+}
+function applyFilters() { filterConc=pendingConc; filterStore=pendingStore; closeFilters(); loadPerfumes(); }
+function clearFilters() { pendingConc=''; pendingStore=''; syncPendingChips(); }
+
+// ── UTILS ──────────────────────────────────────────────────────────────────────
+function fmtLocal(amount, currency) {
+  if (!amount) return '';
+  const sym = {ARS:'$',CLP:'$',EUR:'€',USD:'U$S',PYG:'₲'}[currency] || currency;
+  if (['ARS','CLP','PYG'].includes(currency))
+    return `${sym} ${Math.round(amount).toLocaleString('es-AR')}`;
+  return `${sym} ${amount.toFixed(2)}`;
+}
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>
