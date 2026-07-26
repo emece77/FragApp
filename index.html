@@ -255,6 +255,10 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
         <div class="header-logo">TIENDAS</div>
         <div class="header-meta" id="store-count-meta"></div>
       </div>
+      <div class="search-bar">
+        <input class="search-input" id="store-search-input" type="search"
+          placeholder="Buscar tienda…" autocomplete="off">
+      </div>
       <div class="filters-scroll" id="store-country-chips"></div>
       <div class="list" id="store-list"></div>
     </div>
@@ -262,6 +266,10 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
       <div class="header">
         <div class="btn-icon" onclick="closeStoreDetail()">←</div>
         <div class="header-meta" id="store-detail-title" style="font-size:14px;flex:1"></div>
+      </div>
+      <div class="search-bar">
+        <input class="search-input" id="store-detail-search-input" type="search"
+          placeholder="Buscar perfume o marca…" autocomplete="off">
       </div>
       <div class="list" id="store-detail-list"></div>
     </div>
@@ -355,7 +363,7 @@ fetch(FB + '/fragapp_data.json')
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
 function initApp() {
-  allPerfumes = DB.perfumes || [];
+  allPerfumes = Object.values(DB.perfumes || {});
   pricesByPerfume = DB.prices || {};
 
   document.getElementById('header-meta').textContent = `${allPerfumes.length} perfumes`;
@@ -403,6 +411,8 @@ function initApp() {
 
   document.getElementById('btn-filters').addEventListener('click', openFilters);
   document.getElementById('search-input').addEventListener('input', applySearch);
+  document.getElementById('store-search-input').addEventListener('input', renderStoreList);
+  document.getElementById('store-detail-search-input').addEventListener('input', renderStoreDetailList);
 
   // Swipe down sheet
   let touchStartY = 0;
@@ -542,10 +552,12 @@ function renderStoreList() {
     if (!byStore[p.store_name]) byStore[p.store_name] = { country: p.country, count: 0 };
     byStore[p.store_name].count++;
   });
-  const names = Object.keys(byStore).sort((a,b) => {
+  const q = (document.getElementById('store-search-input').value || '').trim().toLowerCase();
+  let names = Object.keys(byStore).sort((a,b) => {
     const ca = byStore[a].country || '', cb = byStore[b].country || '';
     return ca === cb ? a.localeCompare(b) : ca.localeCompare(cb);
   });
+  if (q) names = names.filter(s => s.toLowerCase().includes(q));
   document.getElementById('store-count-meta').textContent = `${names.length} tiendas`;
   const container = document.getElementById('store-list');
   if (!names.length) {
@@ -571,16 +583,32 @@ function renderStoreList() {
   });
 }
 
+let storeDetailRows = [];
 function openStoreDetail(storeName) {
   document.getElementById('store-list-view').style.display = 'none';
   document.getElementById('store-detail-view').style.display = 'flex';
   document.getElementById('store-detail-title').textContent = storeName;
+  document.getElementById('store-detail-search-input').value = '';
 
-  const rows = Object.entries(pricesByPerfume).map(([pid, arr]) => {
+  storeDetailRows = Object.entries(pricesByPerfume).map(([pid, arr]) => {
     const match = (arr||[]).find(p => p && p.store_name === storeName && p.price_usd > 0);
     return match ? { id: parseInt(pid), price: match } : null;
   }).filter(Boolean);
-  rows.sort((a,b) => a.price.price_usd - b.price.price_usd);
+  storeDetailRows.sort((a,b) => a.price.price_usd - b.price.price_usd);
+
+  renderStoreDetailList();
+}
+
+function renderStoreDetailList() {
+  const q = (document.getElementById('store-detail-search-input').value || '').trim().toLowerCase();
+  let rows = storeDetailRows;
+  if (q) {
+    rows = rows.filter(r => {
+      const perfume = allPerfumes.find(p => p.id === r.id);
+      if (!perfume) return false;
+      return ((perfume.brand||'')+' '+(perfume.name||'')).toLowerCase().includes(q);
+    });
+  }
 
   const container = document.getElementById('store-detail-list');
   if (!rows.length) {
