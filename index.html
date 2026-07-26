@@ -312,7 +312,7 @@ function initApp() {
 
   // Country chips
   const countries = [...new Set(
-    Object.values(pricesByPerfume).flat().map(p => p.country)
+    Object.values(pricesByPerfume).flat().filter(Boolean).map(p => p.country)
   )].sort();
   const ccDiv = document.getElementById('country-chips');
   let html = `<div class="chip active" data-country="" onclick="setCountry('',this)">Todos</div>`;
@@ -330,7 +330,7 @@ function initApp() {
 
   // Tiendas chips
   const stores = [...new Set(
-    Object.values(pricesByPerfume).flat().map(p => p.store_name)
+    Object.values(pricesByPerfume).flat().filter(Boolean).map(p => p.store_name)
   )].sort();
   document.getElementById('store-chips').innerHTML = stores.map(s =>
     `<div class="chip" data-val="${s}" onclick="toggleChip(this,'store')">${esc(s)}</div>`
