@@ -255,6 +255,7 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
         <div class="header-logo">TIENDAS</div>
         <div class="header-meta" id="store-count-meta"></div>
       </div>
+      <div class="filters-scroll" id="store-country-chips"></div>
       <div class="list" id="store-list"></div>
     </div>
     <div id="store-detail-view" style="display:none;flex-direction:column;flex:1;min-height:0">
@@ -271,6 +272,7 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
       <div class="header-logo">QUIERO TENER</div>
       <div class="header-meta" id="wishlist-count"></div>
     </div>
+    <div class="filters-scroll" id="wishlist-country-chips"></div>
     <div class="list" id="wishlist-list"></div>
   </div>
 
@@ -325,6 +327,8 @@ let sortMode = 'name';
 let filterCountry = '';
 let filterConc = '';
 let filterStore = '';
+let storeFilterCountry = '';
+let wishlistFilterCountry = '';
 let pendingConc = '';
 let pendingStore = '';
 let currentSheetPerfume = null;
@@ -369,6 +373,24 @@ function initApp() {
     html += `<div class="chip" data-country="${c}" onclick="setCountry('${c}',this)">${flag} ${c}</div>`;
   });
   ccDiv.innerHTML = html;
+
+  // Country chips (Tiendas)
+  const scDiv = document.getElementById('store-country-chips');
+  let scHtml = `<div class="chip active" data-country="" onclick="setStoreCountry('',this)">Todos</div>`;
+  countries.forEach(c => {
+    const flag = COUNTRY_FLAGS[c] || '';
+    scHtml += `<div class="chip" data-country="${c}" onclick="setStoreCountry('${c}',this)">${flag} ${c}</div>`;
+  });
+  scDiv.innerHTML = scHtml;
+
+  // Country chips (Quiero Tener)
+  const wcDiv = document.getElementById('wishlist-country-chips');
+  let wcHtml = `<div class="chip active" data-country="" onclick="setWishlistCountry('',this)">Todos</div>`;
+  countries.forEach(c => {
+    const flag = COUNTRY_FLAGS[c] || '';
+    wcHtml += `<div class="chip" data-country="${c}" onclick="setWishlistCountry('${c}',this)">${flag} ${c}</div>`;
+  });
+  wcDiv.innerHTML = wcHtml;
 
   // Concentración chips
   const concs = [...new Set(allPerfumes.map(p => p.concentration).filter(Boolean))].sort();
@@ -499,18 +521,21 @@ function switchTab(tab) {
   if (tab === 'wishlist') renderWishlist();
 }
 
-function getGlobalMinUsd(id) {
-  const rows = (pricesByPerfume[id] || []).filter(p => p && p.price_usd > 0);
+function getGlobalMinUsd(id, country) {
+  const rows = (pricesByPerfume[id] || []).filter(p =>
+    p && p.price_usd > 0 && (!country || p.country === country));
   if (!rows.length) return null;
   return Math.min(...rows.map(r => r.price_usd));
 }
-function getGlobalPriceCount(id) {
-  return (pricesByPerfume[id] || []).filter(p => p && p.price_usd > 0).length;
+function getGlobalPriceCount(id, country) {
+  return (pricesByPerfume[id] || []).filter(p =>
+    p && p.price_usd > 0 && (!country || p.country === country)).length;
 }
 
 // ── TAB: TIENDAS ─────────────────────────────────────────────────────────────
 function renderStoreList() {
-  const all = Object.values(pricesByPerfume).flat().filter(Boolean);
+  let all = Object.values(pricesByPerfume).flat().filter(Boolean);
+  if (storeFilterCountry) all = all.filter(p => p.country === storeFilterCountry);
   const byStore = {};
   all.forEach(p => {
     if (!p.store_name) return;
@@ -589,11 +614,14 @@ function closeStoreDetail() {
 
 // ── TAB: QUIERO TENER ────────────────────────────────────────────────────────
 function renderWishlist() {
-  const list = allPerfumes.filter(p => p.to_buy === 1 || p.to_buy === true);
+  let list = allPerfumes.filter(p => p.to_buy === 1 || p.to_buy === true);
+  if (wishlistFilterCountry) {
+    list = list.filter(p => getGlobalPriceCount(p.id, wishlistFilterCountry) > 0);
+  }
   const decorated = list.map(p => ({
     ...p,
-    _minUsd: getGlobalMinUsd(p.id),
-    _count: getGlobalPriceCount(p.id)
+    _minUsd: getGlobalMinUsd(p.id, wishlistFilterCountry),
+    _count: getGlobalPriceCount(p.id, wishlistFilterCountry)
   }));
   decorated.sort((a,b) => {
     const an = ((a.brand||'')+(a.name||'')).toLowerCase();
@@ -845,6 +873,18 @@ function setCountry(country, el) {
 
   renderStoreChips();
   loadPerfumes();
+}
+function setStoreCountry(country, el) {
+  storeFilterCountry = country;
+  document.querySelectorAll('#store-country-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderStoreList();
+}
+function setWishlistCountry(country, el) {
+  wishlistFilterCountry = country;
+  document.querySelectorAll('#wishlist-country-chips .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderWishlist();
 }
 function setSort(mode) {
   sortMode = mode;
