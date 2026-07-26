@@ -60,7 +60,7 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
 .sort-btn:active{background:var(--surface)}
 
 /* LIST */
-.list{flex:1;overflow-y:auto;padding:8px 0}
+.list{flex:1;overflow-y:auto;padding:8px 0 70px}
 .perf-card{margin:0 12px 8px;background:var(--surface);border:1px solid var(--border);
   border-radius:var(--radius);padding:14px 16px;cursor:pointer;
   transition:border-color .15s,transform .1s;display:flex;gap:14px;align-items:flex-start;
@@ -206,34 +206,82 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
 .db-info-bar{font-size:10px;color:var(--text-dim);text-align:center;
   padding:6px;background:var(--surface);border-bottom:1px solid var(--border)}
 .db-info-bar a{color:var(--accent);text-decoration:none}
+
+/* TABS + BOTTOM NAV */
+.tab-panel{display:none;flex:1;flex-direction:column;min-height:0;overflow:hidden}
+.tab-panel.active{display:flex}
+.bottom-nav{position:fixed;left:0;right:0;bottom:0;z-index:80;display:flex;
+  background:var(--surface);border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom,0)}
+.bottom-nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  padding:8px 0 6px;background:none;border:none;color:var(--text-dim);
+  font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.5px;text-transform:uppercase;cursor:pointer}
+.bottom-nav-btn .icon{font-size:18px}
+.bottom-nav-btn.active{color:var(--accent)}
 </style>
 </head>
 <body>
 
 <div id="app" style="display:flex;flex-direction:column;min-height:100dvh">
 
-  <div class="header">
-    <div class="header-logo">FRAG</div>
-    <div class="header-meta" id="header-meta"></div>
-    <div class="btn-icon" id="btn-filters">⚙</div>
-  </div>
-
   <div class="db-info-bar" id="db-info"></div>
 
-  <div class="search-bar">
-    <input class="search-input" id="search-input" type="search"
-      placeholder="Buscar perfume o marca…" autocomplete="off">
+  <div id="tab-perfumes" class="tab-panel active">
+    <div class="header">
+      <div class="header-logo">FRAG</div>
+      <div class="header-meta" id="header-meta"></div>
+      <div class="btn-icon" id="btn-filters">⚙</div>
+    </div>
+
+    <div class="search-bar">
+      <input class="search-input" id="search-input" type="search"
+        placeholder="Buscar perfume o marca…" autocomplete="off">
+    </div>
+
+    <div class="filters-scroll" id="country-chips"></div>
+
+    <div class="sort-bar">
+      <span id="result-count">—</span>
+      <button class="sort-btn active" id="sort-name" onclick="setSort('name')">Nombre ↕</button>
+      <button class="sort-btn" id="sort-price" onclick="setSort('price')">Precio ↕</button>
+    </div>
+
+    <div class="list" id="perf-list"></div>
   </div>
 
-  <div class="filters-scroll" id="country-chips"></div>
-
-  <div class="sort-bar">
-    <span id="result-count">—</span>
-    <button class="sort-btn active" id="sort-name" onclick="setSort('name')">Nombre ↕</button>
-    <button class="sort-btn" id="sort-price" onclick="setSort('price')">Precio ↕</button>
+  <div id="tab-stores" class="tab-panel">
+    <div id="store-list-view" style="display:flex;flex-direction:column;flex:1;min-height:0">
+      <div class="header">
+        <div class="header-logo">TIENDAS</div>
+        <div class="header-meta" id="store-count-meta"></div>
+      </div>
+      <div class="list" id="store-list"></div>
+    </div>
+    <div id="store-detail-view" style="display:none;flex-direction:column;flex:1;min-height:0">
+      <div class="header">
+        <div class="btn-icon" onclick="closeStoreDetail()">←</div>
+        <div class="header-meta" id="store-detail-title" style="font-size:14px;flex:1"></div>
+      </div>
+      <div class="list" id="store-detail-list"></div>
+    </div>
   </div>
 
-  <div class="list" id="perf-list"></div>
+  <div id="tab-wishlist" class="tab-panel">
+    <div class="header">
+      <div class="header-logo">QUIERO TENER</div>
+      <div class="header-meta" id="wishlist-count"></div>
+    </div>
+    <div class="list" id="wishlist-list"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <button class="bottom-nav-btn active" data-tab="perfumes" onclick="switchTab('perfumes')">
+      <span class="icon">🌸</span>Perfumes</button>
+    <button class="bottom-nav-btn" data-tab="stores" onclick="switchTab('stores')">
+      <span class="icon">🏪</span>Tiendas</button>
+    <button class="bottom-nav-btn" data-tab="wishlist" onclick="switchTab('wishlist')">
+      <span class="icon">⭐</span>Quiero Tener</button>
+  </div>
 </div>
 
 <div class="sheet-overlay" id="sheet-overlay" onclick="closeSheet()"></div>
@@ -328,13 +376,8 @@ function initApp() {
     `<div class="chip" data-val="${c}" onclick="toggleChip(this,'conc')">${c}</div>`
   ).join('');
 
-  // Tiendas chips
-  const stores = [...new Set(
-    Object.values(pricesByPerfume).flat().filter(Boolean).map(p => p.store_name)
-  )].sort();
-  document.getElementById('store-chips').innerHTML = stores.map(s =>
-    `<div class="chip" data-val="${s}" onclick="toggleChip(this,'store')">${esc(s)}</div>`
-  ).join('');
+  // Tiendas chips (se recalculan según el país seleccionado)
+  renderStoreChips();
 
   document.getElementById('btn-filters').addEventListener('click', openFilters);
   document.getElementById('search-input').addEventListener('input', applySearch);
@@ -414,8 +457,8 @@ function applySearch() {
 }
 
 // ── RENDER LIST ────────────────────────────────────────────────────────────────
-function renderList(list) {
-  const container = document.getElementById('perf-list');
+function renderList(list, containerId = 'perf-list') {
+  const container = document.getElementById(containerId);
   if (!list.length) {
     container.innerHTML = `<div class="empty"><div class="empty-icon">🔍</div>
       <p>Sin resultados.<br>Probá otra búsqueda o filtro.</p></div>`;
@@ -443,6 +486,122 @@ function renderList(list) {
   container.querySelectorAll('.perf-card').forEach(el => {
     el.addEventListener('click', () => openSheet(parseInt(el.dataset.id)));
   });
+}
+
+// ── TABS ─────────────────────────────────────────────────────────────────────
+let storesRendered = false;
+function switchTab(tab) {
+  document.querySelectorAll('.tab-panel').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  document.querySelectorAll('.bottom-nav-btn').forEach(el =>
+    el.classList.toggle('active', el.dataset.tab === tab));
+  if (tab === 'stores' && !storesRendered) { renderStoreList(); storesRendered = true; }
+  if (tab === 'wishlist') renderWishlist();
+}
+
+function getGlobalMinUsd(id) {
+  const rows = (pricesByPerfume[id] || []).filter(p => p && p.price_usd > 0);
+  if (!rows.length) return null;
+  return Math.min(...rows.map(r => r.price_usd));
+}
+function getGlobalPriceCount(id) {
+  return (pricesByPerfume[id] || []).filter(p => p && p.price_usd > 0).length;
+}
+
+// ── TAB: TIENDAS ─────────────────────────────────────────────────────────────
+function renderStoreList() {
+  const all = Object.values(pricesByPerfume).flat().filter(Boolean);
+  const byStore = {};
+  all.forEach(p => {
+    if (!p.store_name) return;
+    if (!byStore[p.store_name]) byStore[p.store_name] = { country: p.country, count: 0 };
+    byStore[p.store_name].count++;
+  });
+  const names = Object.keys(byStore).sort((a,b) => {
+    const ca = byStore[a].country || '', cb = byStore[b].country || '';
+    return ca === cb ? a.localeCompare(b) : ca.localeCompare(cb);
+  });
+  document.getElementById('store-count-meta').textContent = `${names.length} tiendas`;
+  const container = document.getElementById('store-list');
+  if (!names.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🏪</div><p>Sin tiendas cargadas.</p></div>`;
+    return;
+  }
+  container.innerHTML = names.map(s => {
+    const info = byStore[s];
+    const flag = COUNTRY_FLAGS[info.country] || '';
+    return `<div class="price-row" data-store="${esc(s)}" style="cursor:pointer">
+      <div class="pr-info">
+        <div class="pr-store">${esc(s)}</div>
+        <div class="pr-country">${flag} ${esc(info.country||'')}</div>
+      </div>
+      <div class="pr-prices">
+        <div class="price-count">${info.count} perfume${info.count===1?'':'s'}</div>
+      </div>
+      <div class="pr-link-icon">→</div>
+    </div>`;
+  }).join('');
+  container.querySelectorAll('[data-store]').forEach(el => {
+    el.addEventListener('click', () => openStoreDetail(el.dataset.store));
+  });
+}
+
+function openStoreDetail(storeName) {
+  document.getElementById('store-list-view').style.display = 'none';
+  document.getElementById('store-detail-view').style.display = 'flex';
+  document.getElementById('store-detail-title').textContent = storeName;
+
+  const rows = Object.entries(pricesByPerfume).map(([pid, arr]) => {
+    const match = (arr||[]).find(p => p && p.store_name === storeName && p.price_usd > 0);
+    return match ? { id: parseInt(pid), price: match } : null;
+  }).filter(Boolean);
+  rows.sort((a,b) => a.price.price_usd - b.price.price_usd);
+
+  const container = document.getElementById('store-detail-list');
+  if (!rows.length) {
+    container.innerHTML = `<div class="empty"><div class="empty-icon">🌸</div>
+      <p>Sin perfumes con precio en esta tienda.</p></div>`;
+    return;
+  }
+  container.innerHTML = rows.map(r => {
+    const perfume = allPerfumes.find(p => p.id === r.id);
+    if (!perfume) return '';
+    const isLink = (r.price.product_url||'').startsWith('http');
+    return `<a class="price-row" ${isLink ? `href="${r.price.product_url}" target="_blank"` : ''}
+        style="${!isLink?'cursor:default':''}" onclick="${!isLink?'return false':''}">
+      <div class="pr-info">
+        <div class="pr-store">${esc(perfume.brand)} — ${esc(perfume.name)}</div>
+        <div class="pr-country">${perfume.concentration||''} ${perfume.size_ml?perfume.size_ml+'ml':''}</div>
+      </div>
+      <div class="pr-prices">
+        <div class="pr-usd">U$S ${r.price.price_usd.toFixed(2)}</div>
+        ${r.price.currency !== 'USD' ? `<div class="pr-local">${fmtLocal(r.price.price_original, r.price.currency)}</div>` : ''}
+      </div>
+      ${isLink ? `<div class="pr-link-icon">→</div>` : ''}
+    </a>`;
+  }).join('');
+}
+
+function closeStoreDetail() {
+  document.getElementById('store-detail-view').style.display = 'none';
+  document.getElementById('store-list-view').style.display = 'flex';
+}
+
+// ── TAB: QUIERO TENER ────────────────────────────────────────────────────────
+function renderWishlist() {
+  const list = allPerfumes.filter(p => p.to_buy === 1 || p.to_buy === true);
+  const decorated = list.map(p => ({
+    ...p,
+    _minUsd: getGlobalMinUsd(p.id),
+    _count: getGlobalPriceCount(p.id)
+  }));
+  decorated.sort((a,b) => {
+    const an = ((a.brand||'')+(a.name||'')).toLowerCase();
+    const bn = ((b.brand||'')+(b.name||'')).toLowerCase();
+    return an < bn ? -1 : an > bn ? 1 : 0;
+  });
+  document.getElementById('wishlist-count').textContent = `${decorated.length} perfumes`;
+  renderList(decorated, 'wishlist-list');
 }
 
 // ── SHEET ──────────────────────────────────────────────────────────────────────
@@ -675,6 +834,16 @@ function setCountry(country, el) {
   filterCountry = country;
   document.querySelectorAll('#country-chips .chip').forEach(c => c.classList.remove('active'));
   el.classList.add('active');
+
+  const validStores = new Set(
+    (filterCountry
+      ? Object.values(pricesByPerfume).flat().filter(p => p && p.country === filterCountry)
+      : Object.values(pricesByPerfume).flat().filter(Boolean)
+    ).map(p => p.store_name)
+  );
+  if (filterStore && !validStores.has(filterStore)) { filterStore = ''; pendingStore = ''; }
+
+  renderStoreChips();
   loadPerfumes();
 }
 function setSort(mode) {
@@ -689,6 +858,15 @@ function openFilters() {
   document.getElementById('filters-modal').classList.add('open');
 }
 function closeFilters() { document.getElementById('filters-modal').classList.remove('open'); }
+function renderStoreChips() {
+  const relevant = filterCountry
+    ? Object.values(pricesByPerfume).flat().filter(p => p && p.country === filterCountry)
+    : Object.values(pricesByPerfume).flat().filter(Boolean);
+  const stores = [...new Set(relevant.map(p => p.store_name))].sort();
+  document.getElementById('store-chips').innerHTML = stores.map(s =>
+    `<div class="chip" data-val="${esc(s)}" onclick="toggleChip(this,'store')">${esc(s)}</div>`
+  ).join('');
+}
 function toggleChip(el, type) {
   const val = el.dataset.val;
   if (type === 'conc') pendingConc = pendingConc===val ? '' : val;
