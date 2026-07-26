@@ -296,8 +296,9 @@ fetch(FB + '/fragapp_data.json')
     DB = data;
     initApp();
   })
-  .catch(() => {
-    document.getElementById('db-info').innerHTML = '⚠️ Sin conexión';
+  .catch(err => {
+    console.error('FRAGAPP_LOAD_ERROR', err);
+    document.getElementById('db-info').textContent = '⚠️ ' + err.message;
   });
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
