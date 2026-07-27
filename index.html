@@ -363,7 +363,7 @@ fetch(FB + '/fragapp_data.json')
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
 function initApp() {
-  allPerfumes = Object.values(DB.perfumes || {});
+  allPerfumes = Object.values(DB.perfumes || {}).filter(Boolean);
   pricesByPerfume = DB.prices || {};
 
   document.getElementById('header-meta').textContent = `${allPerfumes.length} perfumes`;
