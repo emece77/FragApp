@@ -504,8 +504,13 @@ function renderList(list, containerId = 'perf-list') {
          <div class="price-best">U$S ${p._minUsd.toFixed(0)}</div>
          <div class="price-count">${p._count} tiend${p._count===1?'a':'as'}</div>`
       : `<div class="price-count" style="color:var(--text-dim)">sin precio</div>`;
+    const thumb = thumbUrl(p.image_path);
+    const imgHtml = thumb
+      ? `<img class="perf-img" src="${thumb}" loading="lazy" alt=""
+           onerror="this.outerHTML='<div class=&quot;perf-img-placeholder&quot;>🌸</div>'">`
+      : `<div class="perf-img-placeholder">🌸</div>`;
     return `<div class="perf-card" data-id="${p.id}">
-      <div class="perf-img-placeholder">🌸</div>
+      ${imgHtml}
       <div class="perf-info">
         <div class="perf-brand">${esc(p.brand)}</div>
         <div class="perf-name">${esc(p.name)}</div>
@@ -703,8 +708,9 @@ function renderSheet() {
   const concTag = perfume.concentration ? `<span class="tag conc">${perfume.concentration}</span>` : '';
   const sizeTag = perfume.size_ml ? `<span class="tag">${perfume.size_ml}ml</span>` : '';
 
-  const imgHtml = perfume.image_path
-    ? `<img class="sheet-img" src="data/images/${esc(perfume.image_path)}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
+  const sheetThumb = thumbUrl(perfume.image_path);
+  const imgHtml = sheetThumb
+    ? `<img class="sheet-img" src="${sheetThumb}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">`
       + `<div class="sheet-img-placeholder" style="display:none">🌸</div>`
     : `<div class="sheet-img-placeholder">🌸</div>`;
 
