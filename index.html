@@ -326,6 +326,12 @@ const FB = "https://frags-f9630-default-rtdb.firebaseio.com/d8f3a91c7e42";
 // ──────────────────────────────────────────────────────────────────────────────
 
 const COUNTRY_FLAGS = {Argentina:'🇦🇷',Chile:'🇨🇱',España:'🇪🇸',Francia:'🇫🇷',Paraguay:'🇵🇾'};
+const THUMB_BASE = "https://raw.githubusercontent.com/emece77/FragApp/main/thumbs/";
+function thumbUrl(imagePath) {
+  if (!imagePath) return null;
+  const stem = imagePath.replace(/\.[^.]+$/, '');
+  return THUMB_BASE + stem + '.jpg';
+}
 
 let DB = { perfumes: [], prices: {}, generated_at: '' };
 let allPerfumes = [];
