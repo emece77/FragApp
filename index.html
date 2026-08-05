@@ -674,7 +674,8 @@ function renderStoreDetailList() {
     const isCheapest = r.price.price_usd === getGlobalMinUsd(r.id);
     let sectionLabel = '';
     if (wantedCount > 0 && wantedCount < rows.length && r.wanted !== lastWasWanted) {
-      sectionLabel = `<div class="sheet-section-title" style="margin:${lastWasWanted===null?'4px':'16px'} 16px 4px">
+      sectionLabel = `<div class="sheet-section-title" style="margin:${lastWasWanted===null?'4px':'16px'} 16px 4px;
+        font-weight:700;font-size:12px;letter-spacing:1px;color:var(--text)">
         ${r.wanted ? '⭐ Quiero Tener' : 'Resto de perfumes'}</div>`;
       lastWasWanted = r.wanted;
     }
