@@ -635,9 +635,15 @@ function openStoreDetail(storeName) {
 
   storeDetailRows = Object.entries(pricesByPerfume).map(([pid, arr]) => {
     const match = (arr||[]).find(p => p && p.store_name === storeName && p.price_usd > 0);
-    return match ? { id: parseInt(pid), price: match } : null;
+    if (!match) return null;
+    const perfume = allPerfumes.find(p => p.id === parseInt(pid));
+    const wanted = perfume && (perfume.to_buy === 1 || perfume.to_buy === true);
+    return { id: parseInt(pid), price: match, wanted };
   }).filter(Boolean);
-  storeDetailRows.sort((a,b) => a.price.price_usd - b.price.price_usd);
+  storeDetailRows.sort((a,b) => {
+    if (a.wanted !== b.wanted) return a.wanted ? -1 : 1;
+    return a.price.price_usd - b.price.price_usd;
+  });
 
   renderStoreDetailList();
 }
@@ -659,12 +665,20 @@ function renderStoreDetailList() {
       <p>Sin perfumes con precio en esta tienda.</p></div>`;
     return;
   }
+  const wantedCount = rows.filter(r => r.wanted).length;
+  let lastWasWanted = null;
   container.innerHTML = rows.map(r => {
     const perfume = allPerfumes.find(p => p.id === r.id);
     if (!perfume) return '';
     const isLink = (r.price.product_url||'').startsWith('http');
     const isCheapest = r.price.price_usd === getGlobalMinUsd(r.id);
-    return `<a class="price-row ${isCheapest?'best-price':''}" ${isLink ? `href="${r.price.product_url}" target="_blank"` : ''}
+    let sectionLabel = '';
+    if (wantedCount > 0 && wantedCount < rows.length && r.wanted !== lastWasWanted) {
+      sectionLabel = `<div class="sheet-section-title" style="margin:${lastWasWanted===null?'4px':'16px'} 16px 4px">
+        ${r.wanted ? '⭐ Quiero Tener' : 'Resto de perfumes'}</div>`;
+      lastWasWanted = r.wanted;
+    }
+    return `${sectionLabel}<a class="price-row ${isCheapest?'best-price':''}" ${isLink ? `href="${r.price.product_url}" target="_blank"` : ''}
         style="${!isLink?'cursor:default':''}" onclick="${!isLink?'return false':''}">
       <div class="pr-info">
         <div class="pr-store">${esc(perfume.brand)} — ${esc(perfume.name)}</div>
@@ -781,6 +795,30 @@ function renderSheet() {
   // ── pestaña INFO: acordes + notas ────────────────────────────────────────────
   let notes = {};
   try { notes = JSON.parse(perfume.notes_json || '{}'); } catch(e) {}
+  const _sc = v => (v && typeof v === 'object') ? v.score : v;
+  const _estela = _sc(notes.estela);
+  const _longevidad = _sc(notes.longevidad);
+  const _cp = _sc(notes.calidad_precio);
+
+  let ratingsHtml = '';
+  if (_estela != null || _longevidad != null || _cp != null) {
+    ratingsHtml = `<div class="sheet-section">
+      <div class="stats-grid">
+        <div class="stat-box">
+          <div class="stat-val">${_estela != null ? Number(_estela).toFixed(1) : '—'}</div>
+          <div class="stat-lbl">Estela</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">${_longevidad != null ? Number(_longevidad).toFixed(1) : '—'}</div>
+          <div class="stat-lbl">Longevidad</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-val">${_cp != null ? Number(_cp).toFixed(1) : '—'}</div>
+          <div class="stat-lbl">Calidad/Precio</div>
+        </div>
+      </div>
+    </div>`;
+  }
 
   // acordes
   let acordesHtml = '';
@@ -893,6 +931,7 @@ function renderSheet() {
     </div>
 
     <div class="sheet-tab-panel ${currentSheetTab==='info'?'active':''}">
+      ${ratingsHtml}
       ${acordesHtml}
       ${notasHtml}
       ${noInfoHtml}
