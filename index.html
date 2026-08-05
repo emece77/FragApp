@@ -15,6 +15,11 @@
   --text-mid:#a8a4b8; --green:#4caf82; --red:#e06c6c;
   --radius:14px; --radius-sm:8px;
 }
+[data-theme="light"] {
+  --bg:#f7f5f0; --surface:#ffffff; --surface2:#efece4; --border:#ddd8cc;
+  --accent:#a8853a; --accent2:#c9a84c; --text:#2a2620; --text-dim:#948f7e;
+  --text-mid:#5a5548; --green:#2f8f5f; --red:#c94f4f;
+}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-height:100dvh;overflow-x:hidden}
 
@@ -320,6 +325,13 @@ img.perf-img{width:64px !important;height:64px !important;max-width:64px !import
       <div class="modal-section-title">Tienda</div>
       <div class="modal-chips" id="store-chips"></div>
     </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Apariencia</div>
+      <div class="modal-chips">
+        <div class="chip" id="theme-dark-btn" onclick="setTheme('dark')">🌙 Oscuro</div>
+        <div class="chip" id="theme-light-btn" onclick="setTheme('light')">☀️ Claro</div>
+      </div>
+    </div>
     <button class="btn-primary" onclick="applyFilters()">Aplicar filtros</button>
   </div>
 </div>
@@ -330,6 +342,20 @@ const FB = "https://frags-f9630-default-rtdb.firebaseio.com/d8f3a91c7e42";
 // ──────────────────────────────────────────────────────────────────────────────
 
 const COUNTRY_FLAGS = {Argentina:'🇦🇷',Chile:'🇨🇱',España:'🇪🇸',Francia:'🇫🇷',Paraguay:'🇵🇾'};
+
+// ── TEMA (claro/oscuro) ──────────────────────────────────────────────────────
+function setTheme(theme) {
+  if (theme === 'light') document.documentElement.setAttribute('data-theme', 'light');
+  else document.documentElement.removeAttribute('data-theme');
+  try { localStorage.setItem('fragapp_theme', theme); } catch(e) {}
+  document.getElementById('theme-dark-btn').classList.toggle('active', theme !== 'light');
+  document.getElementById('theme-light-btn').classList.toggle('active', theme === 'light');
+}
+(function initTheme() {
+  let saved = 'dark';
+  try { saved = localStorage.getItem('fragapp_theme') || 'dark'; } catch(e) {}
+  setTheme(saved);
+})();
 const THUMB_BASE = "https://raw.githubusercontent.com/emece77/FragApp/main/thumbs/";
 function thumbUrl(imagePath) {
   if (!imagePath) return null;
