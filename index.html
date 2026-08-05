@@ -689,6 +689,8 @@ function renderStoreDetailList() {
         <div class="pr-usd ${isCheapest?'cheapest':''}">U$S ${r.price.price_usd.toFixed(2)}</div>
         ${r.price.currency !== 'USD' ? `<div class="pr-local">${fmtLocal(r.price.price_original, r.price.currency)}</div>` : ''}
       </div>
+      <div class="btn-icon" style="width:28px;height:28px;font-size:13px;flex-shrink:0"
+        onclick="event.preventDefault();event.stopPropagation();openSheet(${r.id})">ⓘ</div>
       ${isLink ? `<div class="pr-link-icon">→</div>` : ''}
     </a>`;
   }).join('');
