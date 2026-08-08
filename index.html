@@ -38,10 +38,15 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
 .search-bar{padding:10px 16px;background:var(--surface);border-bottom:1px solid var(--border);
   display:flex;gap:8px;align-items:center}
 .search-input{flex:1;background:var(--surface2);border:1px solid var(--border);
-  border-radius:20px;padding:8px 14px;color:var(--text);
+  border-radius:20px;padding:8px 32px 8px 14px;color:var(--text);
   font-family:'DM Mono',monospace;font-size:13px;outline:none}
 .search-input::placeholder{color:var(--text-dim)}
 .search-input:focus{border-color:var(--accent)}
+.search-wrap{position:relative;flex:1;display:flex;align-items:center}
+.search-clear{position:absolute;right:8px;width:20px;height:20px;border-radius:50%;
+  background:var(--border);color:var(--text);border:none;font-size:12px;
+  display:none;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.search-clear.show{display:flex}
 
 /* CHIPS */
 .filters-scroll{overflow-x:auto;white-space:nowrap;padding:8px 16px;
@@ -244,8 +249,11 @@ img.perf-img{width:64px !important;height:64px !important;max-width:64px !import
     </div>
 
     <div class="search-bar">
-      <input class="search-input" id="search-input" type="search"
-        placeholder="Buscar perfume o marca…" autocomplete="off">
+      <div class="search-wrap">
+        <input class="search-input" id="search-input" type="search"
+          placeholder="Buscar perfume o marca…" autocomplete="off">
+        <button class="search-clear" id="search-clear-btn" type="button" onclick="clearSearch()">✕</button>
+      </div>
     </div>
 
     <div class="filters-scroll" id="country-chips"></div>
@@ -358,6 +366,12 @@ function setTheme(theme) {
   setTheme(saved);
 })();
 const THUMB_BASE = "https://raw.githubusercontent.com/emece77/FragApp/main/thumbs/";
+function clearSearch() {
+  const input = document.getElementById('search-input');
+  input.value = '';
+  document.getElementById('search-clear-btn').classList.remove('show');
+  applySearch();
+}
 function thumbUrl(imagePath) {
   if (!imagePath) return null;
   const stem = imagePath.replace(/\.[^.]+$/, '');
@@ -454,7 +468,11 @@ function initApp() {
   renderStoreChips();
 
   document.getElementById('btn-filters').addEventListener('click', openFilters);
-  document.getElementById('search-input').addEventListener('input', debounce(applySearch, 200));
+  const _debouncedSearch = debounce(applySearch, 200);
+  document.getElementById('search-input').addEventListener('input', () => {
+    document.getElementById('search-clear-btn').classList.toggle('show', !!document.getElementById('search-input').value);
+    _debouncedSearch();
+  });
   document.getElementById('store-search-input').addEventListener('input', debounce(renderStoreList, 200));
   document.getElementById('store-detail-search-input').addEventListener('input', debounce(renderStoreDetailList, 200));
 
