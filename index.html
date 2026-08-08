@@ -74,6 +74,7 @@ body{font-family:'DM Mono',monospace;background:var(--bg);color:var(--text);min-
 .perf-img-placeholder{width:64px;height:64px;border-radius:8px;background:#fff;
   border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;
   justify-content:center;font-size:26px;color:var(--border)}
+.card-rating{display:inline-block;font-size:10px;color:var(--accent);font-weight:500}
 img.perf-img{width:64px !important;height:64px !important;max-width:64px !important;max-height:64px !important;
   border-radius:8px;object-fit:contain;background:#fff;
   border:1px solid var(--border);flex-shrink:0;display:block}
@@ -362,6 +363,13 @@ function thumbUrl(imagePath) {
   const stem = imagePath.replace(/\.[^.]+$/, '');
   return THUMB_BASE + stem + '.jpg';
 }
+function debounce(fn, ms) {
+  let t;
+  return function(...args) {
+    clearTimeout(t);
+    t = setTimeout(() => fn.apply(this, args), ms);
+  };
+}
 
 let DB = { perfumes: [], prices: {}, generated_at: '' };
 let allPerfumes = [];
@@ -446,9 +454,9 @@ function initApp() {
   renderStoreChips();
 
   document.getElementById('btn-filters').addEventListener('click', openFilters);
-  document.getElementById('search-input').addEventListener('input', applySearch);
-  document.getElementById('store-search-input').addEventListener('input', renderStoreList);
-  document.getElementById('store-detail-search-input').addEventListener('input', renderStoreDetailList);
+  document.getElementById('search-input').addEventListener('input', debounce(applySearch, 200));
+  document.getElementById('store-search-input').addEventListener('input', debounce(renderStoreList, 200));
+  document.getElementById('store-detail-search-input').addEventListener('input', debounce(renderStoreDetailList, 200));
 
   // Swipe down sheet
   let touchStartY = 0;
@@ -545,12 +553,15 @@ function renderList(list, containerId = 'perf-list') {
       ? `<img class="perf-img" src="${thumb}" loading="lazy" alt=""
            onerror="this.outerHTML='<div class=&quot;perf-img-placeholder&quot;>🌸</div>'">`
       : `<div class="perf-img-placeholder">🌸</div>`;
+    const cardRating = parseFloat(p.rating) || 0;
+    const ratingHtml = cardRating > 0
+      ? `<div class="card-rating">★ ${cardRating.toFixed(1)}</div>` : '';
     return `<div class="perf-card" data-id="${p.id}">
       ${imgHtml}
       <div class="perf-info">
         <div class="perf-brand">${esc(p.brand)}</div>
         <div class="perf-name">${esc(p.name)}</div>
-        <div class="perf-tags">${concTag}${sizeTag}</div>
+        <div class="perf-tags">${concTag}${sizeTag}${ratingHtml}</div>
       </div>
       <div class="perf-prices">${priceHtml}</div>
     </div>`;
