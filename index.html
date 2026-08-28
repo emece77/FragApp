@@ -388,6 +388,32 @@ function debounce(fn, ms) {
 let DB = { perfumes: [], prices: {}, generated_at: '' };
 let allPerfumes = [];
 let pricesByPerfume = {}; // {perfume_id: [{...}, ...]}
+let wishlistOverrides = {}; // {perfume_id: true/false}
+
+function isWanted(perfume) {
+  const ov = wishlistOverrides[perfume.id];
+  if (ov !== undefined) return !!ov;
+  return perfume.to_buy === 1 || perfume.to_buy === true;
+}
+
+function handleToggleWanted(id, btnEl) {
+  const newVal = toggleWanted(id);
+  btnEl.textContent = newVal ? '★ En Quiero Tener' : '☆ Agregar a Quiero Tener';
+  btnEl.style.background = newVal ? 'var(--accent)' : 'transparent';
+  btnEl.style.color = newVal ? '#000' : 'var(--accent)';
+  if (currentTab === 'wishlist') renderWishlist();
+}
+function toggleWanted(id) {
+  const perfume = allPerfumes.find(p => p.id === id);
+  if (!perfume) return;
+  const newVal = !isWanted(perfume);
+  wishlistOverrides[id] = newVal;
+  fetch(FB + '/fragapp_data/wishlist_overrides/' + id + '.json', {
+    method: 'PUT',
+    body: JSON.stringify(newVal)
+  }).catch(() => {});
+  return newVal;
+}
 let filtered = [];
 let sortMode = 'name';
 let filterCountry = '';
@@ -412,6 +438,7 @@ fetch(FB + '/fragapp_data.json')
       return;
     }
     DB = data;
+    wishlistOverrides = data.wishlist_overrides || {};
     initApp();
   })
   .catch(err => {
@@ -666,7 +693,7 @@ function openStoreDetail(storeName) {
     const match = (arr||[]).find(p => p && p.store_name === storeName && p.price_usd > 0);
     if (!match) return null;
     const perfume = allPerfumes.find(p => p.id === parseInt(pid));
-    const wanted = perfume && (perfume.to_buy === 1 || perfume.to_buy === true);
+    const wanted = perfume && isWanted(perfume);
     return { id: parseInt(pid), price: match, wanted };
   }).filter(Boolean);
   storeDetailRows.sort((a,b) => {
@@ -732,7 +759,7 @@ function closeStoreDetail() {
 
 // ── TAB: QUIERO TENER ────────────────────────────────────────────────────────
 function renderWishlist() {
-  let list = allPerfumes.filter(p => p.to_buy === 1 || p.to_buy === true);
+  let list = allPerfumes.filter(p => isWanted(p));
   if (wishlistFilterCountry) {
     list = list.filter(p => getGlobalPriceCount(p.id, wishlistFilterCountry) > 0);
   }
@@ -952,6 +979,12 @@ function renderSheet() {
         ${perfume.fragrantica_url ? `<a href="${perfume.fragrantica_url}" target="_blank"
             style="display:inline-block;margin-top:6px;font-size:11px;color:var(--accent);text-decoration:none">
             Ver en Fragrantica →</a>` : ''}
+        <button onclick="handleToggleWanted(${perfume.id}, this)"
+          style="display:block;margin-top:8px;padding:6px 14px;border-radius:16px;font-size:12px;
+                 border:1px solid var(--accent);background:${isWanted(perfume)?'var(--accent)':'transparent'};
+                 color:${isWanted(perfume)?'#000':'var(--accent)'};cursor:pointer">
+          ${isWanted(perfume) ? '★ En Quiero Tener' : '☆ Agregar a Quiero Tener'}
+        </button>
       </div>
     </div>
 
