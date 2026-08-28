@@ -573,7 +573,7 @@ function renderList(list, containerId = 'perf-list') {
       : `<div class="perf-img-placeholder">🌸</div>`;
     const cardRating = parseFloat(p.rating) || 0;
     const ratingHtml = cardRating > 0
-      ? `<div class="card-rating">★ ${cardRating.toFixed(1)}</div>` : '';
+      ? `<div class="card-rating">★ ${cardRating.toFixed(2)}</div>` : '';
     return `<div class="perf-card" data-id="${p.id}">
       ${imgHtml}
       <div class="perf-info">
