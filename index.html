@@ -408,6 +408,8 @@ function toggleWanted(id) {
   if (!perfume) return;
   const newVal = !isWanted(perfume);
   wishlistOverrides[id] = newVal;
+  DB.wishlist_overrides = wishlistOverrides;
+  cacheSave(DB);
   fetch(FB + '/fragapp_data/wishlist_overrides/' + id + '.json', {
     method: 'PUT',
     body: JSON.stringify(newVal)
@@ -426,25 +428,69 @@ let pendingStore = '';
 let currentSheetPerfume = null;
 let currentSheetCountry = '';
 
-// ── CARGA DESDE FIREBASE ────────────────────────────────────────────────────────
+// ── CARGA DESDE FIREBASE (con copia guardada en el teléfono) ──────────────────
 document.getElementById('db-info').textContent = 'Cargando datos…';
 
-fetch(FB + '/fragapp_data.json')
-  .then(r => r.json())
-  .then(data => {
-    if (!data) {
-      document.getElementById('db-info').innerHTML =
-        '⚠️ Sin datos — publicá desde la app primero';
-      return;
-    }
-    DB = data;
-    wishlistOverrides = data.wishlist_overrides || {};
-    initApp();
-  })
-  .catch(err => {
-    console.error('FRAGAPP_LOAD_ERROR', err);
-    document.getElementById('db-info').textContent = '⚠️ ' + err.message;
+function cacheDB() {
+  return new Promise((res, rej) => {
+    const req = indexedDB.open('fragapp_cache', 1);
+    req.onupgradeneeded = () => req.result.createObjectStore('kv');
+    req.onsuccess = () => res(req.result);
+    req.onerror = () => rej(req.error);
   });
+}
+function cacheLoad() {
+  return cacheDB().then(db => new Promise(res => {
+    const r = db.transaction('kv').objectStore('kv').get('data');
+    r.onsuccess = () => res(r.result || null);
+    r.onerror = () => res(null);
+  })).catch(() => null);
+}
+function cacheSave(data) {
+  cacheDB().then(db => db.transaction('kv', 'readwrite').objectStore('kv').put(data, 'data')).catch(() => {});
+}
+function fetchJSON(url, ms) {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  return fetch(url, { signal: ctrl.signal }).then(r => r.json()).finally(() => clearTimeout(t));
+}
+function showLoadError(err) {
+  console.error('FRAGAPP_LOAD_ERROR', err);
+  document.getElementById('db-info').textContent = '⚠️ ' + err.message;
+}
+function loadFull() {
+  return fetch(FB + '/fragapp_data.json')
+    .then(r => r.json())
+    .then(data => {
+      if (!data) {
+        document.getElementById('db-info').innerHTML =
+          '⚠️ Sin datos — publicá desde la app primero';
+        return;
+      }
+      DB = data;
+      wishlistOverrides = data.wishlist_overrides || {};
+      cacheSave(DB);
+      initApp();
+    });
+}
+function useCached(cached) {
+  DB = cached;
+  wishlistOverrides = DB.wishlist_overrides || {};
+  initApp();
+}
+
+cacheLoad().then(cached => {
+  if (!cached) return loadFull().catch(showLoadError);
+  return fetchJSON(FB + '/fragapp_data/generated_at.json', 5000).then(
+    remoteStamp => {
+      if (remoteStamp && remoteStamp !== cached.generated_at) return loadFull().catch(showLoadError);
+      return fetchJSON(FB + '/fragapp_data/wishlist_overrides.json', 5000)
+        .then(ov => { cached.wishlist_overrides = ov || {}; cacheSave(cached); }, () => {})
+        .then(() => useCached(cached));
+    },
+    () => useCached(cached)   // sin señal: abrir con la copia guardada
+  );
+});
 
 // ── INIT ───────────────────────────────────────────────────────────────────────
 function initApp() {
