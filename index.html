@@ -631,7 +631,7 @@ function renderList(list, containerId = 'perf-list') {
       <p>Sin resultados.<br>Probá otra búsqueda o filtro.</p></div>`;
     return;
   }
-  container.innerHTML = list.map(p => {
+  const cardHtml = p => {
     const concTag = p.concentration ? `<span class="tag conc">${p.concentration}</span>` : '';
     const sizeTag = p.size_ml ? `<span class="tag">${p.size_ml}ml</span>` : '';
     const priceHtml = p._minUsd
@@ -656,11 +656,24 @@ function renderList(list, containerId = 'perf-list') {
       </div>
       <div class="perf-prices">${priceHtml}</div>
     </div>`;
-  }).join('');
+  };
 
-  container.querySelectorAll('.perf-card').forEach(el => {
-    el.addEventListener('click', () => openSheet(parseInt(el.dataset.id)));
-  });
+  const token = (container._renderToken = (container._renderToken || 0) + 1);
+  const FIRST = 40, CHUNK = 150;
+  container.innerHTML = list.slice(0, FIRST).map(cardHtml).join('');
+  let i = FIRST;
+  function addChunk() {
+    if (container._renderToken !== token || i >= list.length) return;
+    container.insertAdjacentHTML('beforeend', list.slice(i, i + CHUNK).map(cardHtml).join(''));
+    i += CHUNK;
+    setTimeout(addChunk, 0);
+  }
+  setTimeout(addChunk, 0);
+
+  container.onclick = e => {
+    const el = e.target.closest('.perf-card');
+    if (el) openSheet(parseInt(el.dataset.id));
+  };
 }
 
 // ── TABS ─────────────────────────────────────────────────────────────────────
